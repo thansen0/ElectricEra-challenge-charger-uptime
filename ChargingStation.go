@@ -6,8 +6,8 @@ import (
 
 type Charger struct {
     ChargerID uint32
-    UpTime int
-    DownTime int
+    UpTime uint64
+    DownTime uint64
 }
 
 type Station struct {
@@ -37,7 +37,7 @@ func (cm *ChargingMonitor) AddStation(stationID uint32) {
 }
 
 // AddCharger adds a charger to a station
-func (cm *ChargingMonitor) AddCharger(stationID uint32, chargerID uint32, uptime int, downtime int) {
+func (cm *ChargingMonitor) AddCharger(stationID uint32, chargerID uint32, uptime uint64, downtime uint64) {
     station, exists := cm.Stations[stationID]
     if !exists {
         cm.AddStation(stationID)
@@ -49,7 +49,7 @@ func (cm *ChargingMonitor) AddCharger(stationID uint32, chargerID uint32, uptime
             // add uptime and downtime to struct
             charger.UpTime += uptime
             charger.DownTime += downtime
-            fmt.Printf("Found charger %d %d \n", charger.UpTime, charger.DownTime)
+            // fmt.Printf("Found charger %d %d \n", charger.UpTime, charger.DownTime)
             // write to original pointer
             cm.Stations[stationID].Chargers[charger_index] = charger
             return
@@ -73,3 +73,28 @@ func (cm *ChargingMonitor) ListChargers(stationID uint32) ([]Charger, bool) {
     }
     return station.Chargers, true
 }
+
+func (cm *ChargingMonitor) CalcUptime(stationID uint32, chargerID uint32) uint64 {
+    station, exists := cm.Stations[stationID]
+    if !exists {
+        // doesn't exist, so 0 according to problem statement
+        return 0
+    }
+
+    for _, charger := range station.Chargers {
+        if charger.ChargerID == chargerID {
+            fmt.Printf("Charger Status: %d %d \n", charger.UpTime, charger.DownTime)
+            var tot_time uint64 = charger.UpTime + charger.DownTime
+            if tot_time == 0 {
+                // no up or down time recorded
+                return tot_time
+            }
+            // add uptime and downtime to struct
+            return (100 * charger.UpTime) / (tot_time)
+        }
+    }
+
+    // no uptime is 0 according to problem statement
+    return 0
+}
+
