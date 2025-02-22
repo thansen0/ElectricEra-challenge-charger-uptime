@@ -1,7 +1,8 @@
 package main
 
 import (
-    "fmt"
+//    "fmt"
+    "sort"
 )
 
 type Charger struct {
@@ -17,12 +18,14 @@ type Station struct {
 
 type ChargingMonitor struct {
     Stations map[uint32]Station
+    ChargerToStat map[uint32]uint32
 }
 
 // Creates nwe charging station map
 func NewChargingMonitor() *ChargingMonitor {
     return &ChargingMonitor{
         Stations: make(map[uint32]Station),
+        ChargerToStat: make(map[uint32]uint32),
     }
 }
 
@@ -43,6 +46,9 @@ func (cm *ChargingMonitor) AddCharger(stationID uint32, chargerID uint32, uptime
         cm.AddStation(stationID)
         station = cm.Stations[stationID]
     }
+
+    // insert into reverse lookup as well
+    cm.ChargerToStat[chargerID] = stationID
 
     for charger_index, charger := range station.Chargers {
         if charger.ChargerID == chargerID {
@@ -65,6 +71,24 @@ func (cm *ChargingMonitor) AddCharger(stationID uint32, chargerID uint32, uptime
     cm.Stations[stationID] = station
 }
 
+func (cm *ChargingMonitor) GetStationID(chargerID uint32) uint32 {
+    return cm.ChargerToStat[chargerID]
+}
+
+func (cm *ChargingMonitor) ListStations() []uint32 {
+    var keys []uint32
+    for stationID := range cm.Stations {
+        keys = append(keys, stationID)
+    }
+
+    // slice comes unsorted, but we prefer it sorted on printout
+    sort.Slice(keys, func(i, j int) bool {
+        return keys[i] < keys[j]
+    })
+
+    return keys
+}
+
 // ListChargers returns all chargers for a station
 func (cm *ChargingMonitor) ListChargers(stationID uint32) ([]Charger, bool) {
     station, exists := cm.Stations[stationID]
@@ -74,27 +98,46 @@ func (cm *ChargingMonitor) ListChargers(stationID uint32) ([]Charger, bool) {
     return station.Chargers, true
 }
 
-func (cm *ChargingMonitor) CalcUptime(stationID uint32, chargerID uint32) uint64 {
-    station, exists := cm.Stations[stationID]
+func (cm *ChargingMonitor) CalcStationUptime(stationID uint32) uint64 {
+    chargers, exists := cm.ListChargers(stationID)    
     if !exists {
         // doesn't exist, so 0 according to problem statement
         return 0
     }
 
+    var tot_time uint64 = 0
+    var up_time uint64 = 0
+    for _, c := range chargers {
+        u, t := cm.CalcUptime(stationID, c.ChargerID)
+        tot_time += t
+        up_time += u
+    }
+
+    if tot_time == 0 {
+        // doesn't exist, so 0 according to problem statement
+        return tot_time
+    }
+
+    return (up_time * 100) / tot_time
+}
+
+func (cm *ChargingMonitor) CalcUptime(stationID uint32, chargerID uint32) (uint64, uint64) {
+    station, exists := cm.Stations[stationID]
+    if !exists {
+        return 0, 0
+    }
+
     for _, charger := range station.Chargers {
         if charger.ChargerID == chargerID {
-            fmt.Printf("Charger Status: %d %d \n", charger.UpTime, charger.DownTime)
+            // fmt.Printf("Charger Status: %d %d \n", charger.UpTime, charger.DownTime)
             var tot_time uint64 = charger.UpTime + charger.DownTime
-            if tot_time == 0 {
-                // no up or down time recorded
-                return tot_time
-            }
+
             // add uptime and downtime to struct
-            return (100 * charger.UpTime) / (tot_time)
+            return charger.UpTime, tot_time
         }
     }
 
-    // no uptime is 0 according to problem statement
-    return 0
+    // no data is 0 according to problem statement
+    return 0, 0
 }
 
