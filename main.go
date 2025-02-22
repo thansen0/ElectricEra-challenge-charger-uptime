@@ -146,7 +146,7 @@ func main() {
     for _, sid := range stationIDs {
         var uptime uint64 = cm.CalcStationUptime(sid)
 
-        line := fmt.Sprintf("%d, %d\n", sid, uptime)
+        line := fmt.Sprintf("%d %d\n", sid, uptime)
         fmt.Print(line)
         _, err = out_file.WriteString(line)
     }

@@ -1,7 +1,6 @@
 package main
 
 import (
-//    "fmt"
     "sort"
 )
 
@@ -71,10 +70,12 @@ func (cm *ChargingMonitor) AddCharger(stationID uint32, chargerID uint32, uptime
     cm.Stations[stationID] = station
 }
 
+// Gets station ID from charger ID
 func (cm *ChargingMonitor) GetStationID(chargerID uint32) uint32 {
     return cm.ChargerToStat[chargerID]
 }
 
+// Creates a slice of station IDs in O(n) time
 func (cm *ChargingMonitor) ListStations() []uint32 {
     var keys []uint32
     for stationID := range cm.Stations {
@@ -98,6 +99,7 @@ func (cm *ChargingMonitor) ListChargers(stationID uint32) ([]Charger, bool) {
     return station.Chargers, true
 }
 
+// Calculates station uptime as a truncated percent out of 100
 func (cm *ChargingMonitor) CalcStationUptime(stationID uint32) uint64 {
     chargers, exists := cm.ListChargers(stationID)    
     if !exists {
@@ -108,7 +110,7 @@ func (cm *ChargingMonitor) CalcStationUptime(stationID uint32) uint64 {
     var tot_time uint64 = 0
     var up_time uint64 = 0
     for _, c := range chargers {
-        u, t := cm.CalcUptime(stationID, c.ChargerID)
+        u, t := cm.calcChargerUptime(stationID, c.ChargerID)
         tot_time += t
         up_time += u
     }
@@ -121,7 +123,9 @@ func (cm *ChargingMonitor) CalcStationUptime(stationID uint32) uint64 {
     return (up_time * 100) / tot_time
 }
 
-func (cm *ChargingMonitor) CalcUptime(stationID uint32, chargerID uint32) (uint64, uint64) {
+// returns the uptime and total_time of a particular charger at a particular
+// station.
+func (cm *ChargingMonitor) calcChargerUptime(stationID uint32, chargerID uint32) (uint64, uint64) {
     station, exists := cm.Stations[stationID]
     if !exists {
         return 0, 0
