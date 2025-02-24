@@ -4,17 +4,23 @@ import (
     "sort"
 )
 
+// struct defining charger, associated
+// with a station
 type Charger struct {
     ChargerID uint32
     UpTime uint64
     DownTime uint64
 }
 
+// contains a slice of chargers, we assume the number
+// of chargers per station is relatively small
 type Station struct {
     StationID uint32
     Chargers []Charger
 }
 
+// used as instance for object, contains fast
+// lookup for stations and station ID's
 type ChargingMonitor struct {
     Stations map[uint32]Station
     ChargerToStat map[uint32]uint32
@@ -124,7 +130,7 @@ func (cm *ChargingMonitor) CalcStationUptime(stationID uint32) uint64 {
 }
 
 // returns the uptime and total_time of a particular charger at a particular
-// station.
+// station, returns (0,0) if the charger is invalid
 func (cm *ChargingMonitor) calcChargerUptime(stationID uint32, chargerID uint32) (uint64, uint64) {
     station, exists := cm.Stations[stationID]
     if !exists {

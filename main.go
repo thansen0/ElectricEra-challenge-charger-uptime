@@ -19,6 +19,8 @@ import (
     "strconv"
 )
 
+// gets the first value of a fields array and returns it as a uint32
+// This is important because ParseUint always returns a uint64 type
 func ParseID(fields []string, line string) (stationID uint32) {
     stationID64, err := strconv.ParseUint(fields[0], 10, 32)
     if err != nil {
@@ -51,9 +53,6 @@ func main() {
 
     scanner := bufio.NewScanner(file)
     var curSel string
-    // maintain charger/station ID association
-    //var charToStat map[uint32]uint32
-    // charToStat = make(map[uint32]uint32)
 
     for (scanner.Scan()) {
         line := strings.TrimSpace(scanner.Text())
