@@ -34,10 +34,9 @@ I made two assumptions in regards to maintaining uptime and downtime. The first 
 ## Assumptions
 
  - ChargerID's are unique, even on different stations.
- - Time complexity for the number of chargers is not a significant concern. While we could have tens of thousands of stations, a station is only expected to have a few chargers associated with it. With this assumption, I store stations in a `map` and chargers in a `slice` (i.e. array). There is a reverse lookup map (charger ID to station ID), however this doesn't hold or point to charger data.
+ - Time complexity for the number of chargers is not a significant concern. While we could have tens of thousands of stations, a station is only expected to have a few chargers associated with it. With this assumption, I store stations in a `map` and chargers in a `slice` (i.e. array). There is a reverse lookup map (charger ID to station ID), however this doesn't hold or point to charger data, just the ID.
  - Everything is stored in memory, as I felt databases/etc were beyond the scope of the challenge prompt.
- - The time values are not sequential or otherwise meaningful. No information is known about an epoch, and correct up/downtime calculations seem to ignore segments with no recorded information. They are treated as a scalar value counting up and down time.
- - The time values must come in sequential order. The epoch is not set at zero, rather it starts at the first time given.
+ - The time values must come in sequential order. The epoch is the first time given.
  - If no information is known about the charger, we assume it's down.
  - Uptime percents are truncated to integers
  - Although I believe unit tests are important for any project of importance, I felt they were beyond the scope of a take-home assignment.
