@@ -2,12 +2,15 @@ package main
 
 import (
     "sort"
+    "fmt"
+    "os"
 )
 
 // struct defining charger, associated
 // with a station
 type Charger struct {
     ChargerID uint32
+    PrevTime uint64
     UpTime uint64
     DownTime uint64
 }
@@ -22,14 +25,14 @@ type Station struct {
 // used as instance for object, contains fast
 // lookup for stations and station ID's
 type ChargingMonitor struct {
-    Stations map[uint32]Station
+    Stations map[uint32]*Station
     ChargerToStat map[uint32]uint32
 }
 
 // Creates nwe charging station map
 func NewChargingMonitor() *ChargingMonitor {
     return &ChargingMonitor{
-        Stations: make(map[uint32]Station),
+        Stations: make(map[uint32]*Station),
         ChargerToStat: make(map[uint32]uint32),
     }
 }
@@ -37,7 +40,7 @@ func NewChargingMonitor() *ChargingMonitor {
 // AddStation adds a new station if it doesn’t exist
 func (cm *ChargingMonitor) AddStation(stationID uint32) {
     if _, exists := cm.Stations[stationID]; !exists {
-        cm.Stations[stationID] = Station{
+        cm.Stations[stationID] = &Station{
             StationID: stationID,
             Chargers:  []Charger{},
         }
@@ -45,24 +48,48 @@ func (cm *ChargingMonitor) AddStation(stationID uint32) {
 }
 
 // AddCharger adds a charger to a station
-func (cm *ChargingMonitor) AddCharger(stationID uint32, chargerID uint32, uptime uint64, downtime uint64) {
+func (cm *ChargingMonitor) AddCharger(stationID uint32, chargerID uint32, start_time uint64, end_time uint64, available bool) {
+    var uptime uint64
+    var downtime uint64
+    // set uptime and downtime variables, simplifies logic
+    if available {
+        uptime = end_time - start_time
+        downtime = 0
+    } else {
+        uptime = 0
+        downtime = end_time - start_time
+    }
+
+    // makes sure station exists, if not, add it
     station, exists := cm.Stations[stationID]
     if !exists {
+        fmt.Printf("Creating new station: %d\n", stationID)
         cm.AddStation(stationID)
-        station = cm.Stations[stationID]
+        station, _ = cm.Stations[stationID]
     }
 
     // insert into reverse lookup as well
     cm.ChargerToStat[chargerID] = stationID
 
-    for charger_index, charger := range station.Chargers {
-        if charger.ChargerID == chargerID {
-            // add uptime and downtime to struct
-            charger.UpTime += uptime
-            charger.DownTime += downtime
-            // fmt.Printf("Found charger %d %d \n", charger.UpTime, charger.DownTime)
-            // write to original pointer
-            cm.Stations[stationID].Chargers[charger_index] = charger
+    // find if charger exists, if so update
+    for i := 0; i < len(station.Chargers); i++ {
+        // found current charger in list, thus it exists
+        if station.Chargers[i].ChargerID == chargerID {
+            // check for relative order
+            if station.Chargers[i].PrevTime > start_time {
+                fmt.Println("ERROR: Up and down time from input file is out of order.")
+                os.Exit(1)
+            }
+
+            if station.Chargers[i].PrevTime > 0 && station.Chargers[i].PrevTime < start_time {
+                // update downtime with missing sequential time
+                station.Chargers[i].DownTime += start_time - station.Chargers[i].PrevTime
+            }
+            station.Chargers[i].PrevTime = end_time
+
+            // update uptime and downtime
+            station.Chargers[i].UpTime += uptime
+            station.Chargers[i].DownTime += downtime
             return
         }
     }
@@ -70,10 +97,13 @@ func (cm *ChargingMonitor) AddCharger(stationID uint32, chargerID uint32, uptime
     // no charger exists, add one
     station.Chargers = append(station.Chargers, Charger{
         ChargerID: chargerID,
+        PrevTime:  end_time,
         UpTime:    uptime,
         DownTime:  downtime,
     })
-    cm.Stations[stationID] = station
+
+    // assign station back into object struct
+    // cm.Stations[stationID] = station
 }
 
 // Gets station ID from charger ID

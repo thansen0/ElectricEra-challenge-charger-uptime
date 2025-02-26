@@ -33,7 +33,6 @@ func ParseID(fields []string, line string) (stationID uint32) {
 }
 
 func main() {
-    fmt.Println("Electric Era Interview Problem")
     cm := NewChargingMonitor()
 
     if len(os.Args) != 2 {
@@ -41,7 +40,6 @@ func main() {
         os.Exit(1)
     }
     var in_file string = os.Args[1]
-    // fmt.Println(in_file)
 
     // read in lines from file until empty line
     file, err := os.Open(in_file)
@@ -74,7 +72,6 @@ func main() {
 
         switch curSel {
         case "Stations":
-
             // can have a station with no charger
             if len(fields) < 1 {
                 fmt.Printf("ERROR: invalid station line: %s", line)
@@ -94,8 +91,7 @@ func main() {
                 }
                 chargerID := uint32(chargerID64)
 
-                cm.AddCharger(stationID, chargerID, 0, 0)
-                // charToStat[chargerID] = stationID
+                cm.AddCharger(stationID, chargerID, 0, 0, false)
             }
 
         case "Charger Availability Reports":
@@ -121,11 +117,7 @@ func main() {
                 os.Exit(1)
             }
 
-            if available {
-                cm.AddCharger(cm.GetStationID(chargerID), chargerID, endTime - startTime, 0)
-            } else {
-                cm.AddCharger(cm.GetStationID(chargerID), chargerID, 0, endTime - startTime)
-            }
+            cm.AddCharger(cm.GetStationID(chargerID), chargerID, startTime, endTime, available)
         }
 
     }
